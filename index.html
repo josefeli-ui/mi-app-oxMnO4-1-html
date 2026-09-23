@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabVirtual: Oxidación de Alcoholes con KMnO4</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass-tube {
+      background: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 100%);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.08), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border-radius: 0 0 16px 16px;
+    }
+    .liquid {
+      transition: background-color 0.1s linear, height 0.3s ease;
+      border-radius: 0 0 14px 14px;
+    }
+    .precipitate {
+      transition: height 0.1s linear;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex justify-center p-0 sm:p-4 select-none font-sans">
+
+  <!-- Marco Móvil (390 x 844 aprox) -->
+  <div class="w-full max-w-[420px] bg-slate-800 flex flex-col justify-between shadow-2xl relative overflow-hidden sm:rounded-3xl border border-slate-700 min-h-screen sm:min-h-[844px]">
+
+    <!-- 1. Encabezado / HUD -->
+    <header class="p-3 bg-slate-900 border-b border-slate-700 flex justify-between items-center shadow-md">
+      <div>
+        <h1 class="text-sm font-bold text-sky-400">Oxidación de Alcoholes</h1>
+        <p class="text-[11px] text-slate-400">Cinética Pseudo-Primer Orden</p>
+      </div>
+      <div class="flex gap-1.5">
+        <button onclick="toggleModal('modal-structures')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs text-sky-300 font-medium transition">
+          Estructuras
+        </button>
+        <button onclick="toggleModal('modal-notebook')" class="px-2 py-1 bg-sky-600 hover:bg-sky-500 rounded text-xs text-white font-medium transition">
+          Cuaderno
+        </button>
+      </div>
+    </header>
+
+    <!-- Banner de Alertas Pedagógicas -->
+    <div id="toast-banner" class="hidden mx-3 mt-2 p-2 bg-amber-900/90 border border-amber-600 text-amber-200 text-xs rounded-lg transition-all duration-300 flex items-center justify-between">
+      <span id="toast-message">Alerta</span>
+      <button onclick="hideToast()" class="text-amber-300 font-bold ml-2">✕</button>
+    </div>
+
+    <!-- 2. Área Central de Trabajo (Gradilla y Tubos) -->
+    <main class="flex-1 px-2 py-3 flex flex-col justify-center">
+      <div class="bg-slate-900/70 p-3 rounded-2xl border border-slate-700/80 shadow-inner">
+        <!-- Render de Gradilla -->
+        <div class="grid grid-cols-6 gap-1.5 items-end justify-items-center h-52 pb-1 relative">
+          <div id="tubes-container" class="contents"></div>
+        </div>
+        <!-- Base de la Gradilla -->
+        <div class="w-full h-3 bg-zinc-700 rounded mt-1 border-t border-zinc-500 shadow"></div>
+        <div class="flex justify-between items-center text-[10px] text-slate-400 mt-2 px-1">
+          <span>Toca un tubo para ver cinética</span>
+          <span id="global-k-indicator">T: 70°C</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- 3. Muelle de Herramientas y Reactivos -->
+    <footer class="p-3 bg-slate-900 border-t border-slate-700 space-y-2">
+      <!-- Fila 1: Reactivos de Muestra -->
+      <div>
+        <p class="text-[11px] font-semibold text-slate-400 mb-1">1. Dosificar Muestras (10 gotas c/u):</p>
+        <button onclick="dispenseAllSamples()" class="w-full py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg text-xs font-medium shadow transition">
+          Llenar y Rotular Tubos (Muestras 1 a 6)
+        </button>
+      </div>
+
+      <!-- Fila 2: Oxidante KMnO4 -->
+      <div>
+        <p class="text-[11px] font-semibold text-slate-400 mb-1">2. Agente Oxidante (1 gota):</p>
+        <button onclick="addKMnO4ToAll()" class="w-full py-1.5 bg-purple-800 hover:bg-purple-700 text-purple-100 rounded-lg text-xs font-medium shadow transition">
+          Agregar 1 gota de KMnO₄ al 1%
+        </button>
+      </div>
+
+      <!-- Fila 3: Estación Baño María y Limpieza -->
+      <div>
+        <p class="text-[11px] font-semibold text-slate-400 mb-1">3. Calentamiento (70°C):</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-heat" onclick="toggleWaterBath()" class="py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-medium shadow transition">
+            Baño María: <span id="bath-status">Apagado</span> (<span id="timer-display">0.0s</span>)
+          </button>
+          <button onclick="simulateFastForward(15)" class="py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium shadow transition">
+            Avanzar +15s
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-1">
+        <button onclick="resetLab()" class="w-full py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded text-xs transition border border-slate-700">
+          Limpiar Gradilla
+        </button>
+      </div>
+    </footer>
+
+    <!-- MODAL 1: Estructuras Químicas & Cinética -->
+    <div id="modal-structures" class="hidden absolute inset-0 bg-slate-950/95 z-50 p-4 overflow-y-auto flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm font-bold text-sky-400">Cinética y Mecanismo: Influencia del H-α</h2>
+          <button onclick="toggleModal('modal-structures')" class="text-slate-400 text-lg font-bold">✕</button>
+        </div>
+        <p class="text-xs text-slate-300 mb-3">
+          El alcohol en gran exceso estipula una <strong>cinética de pseudo-primer orden</strong>: $[MnO_4^-](t) = [MnO_4^-]_0 \cdot e^{-k_{obs}t}$.
+        </p>
+        
+        <div class="space-y-2 text-xs">
+          <div class="p-2 bg-slate-800 rounded border border-amber-500/50">
+            <span class="text-amber-400 font-semibold">Secundarios (Isopropanol, 2-Butanol) | k ≈ 0.095 s⁻¹:</span>
+            <p class="text-slate-300 text-[11px] mt-0.5">Dos grupos alquilo donadores (+I) aumentan la densidad electrónica en el carbono carbinol, facilitando la eliminación del H-α. Reaccionan primero (8 a 20 s).</p>
+          </div>
+          <div class="p-2 bg-slate-800 rounded border border-emerald-500/50">
+            <span class="text-emerald-400 font-semibold">Primarios (Metanol, Etanol) | k ≈ 0.045 - 0.055 s⁻¹:</span>
+            <p class="text-slate-300 text-[11px] mt-0.5">Menor densidad electrónica relativa; viran más tarde hacia tonos pardos (25 a 45 s).</p>
+          </div>
+          <div class="p-2 bg-slate-800 rounded border border-rose-500/50">
+            <span class="text-rose-400 font-semibold">Terciario (2-Metil-2-propanol) y Agua | k = 0:</span>
+            <p class="text-slate-300 text-[11px] mt-0.5">Sin hidrógenos alfa. La barrera energética es insalvable; no hay reducción del permanganato.</p>
+          </div>
+        </div>
+      </div>
+      <button onclick="toggleModal('modal-structures')" class="w-full mt-4 py-2 bg-slate-700 text-white rounded text-xs font-semibold">Cerrar</button>
+    </div>
+
+    <!-- MODAL 2: Cuaderno de Observación y Conclusiones Adaptado -->
+    <div id="modal-notebook" class="hidden absolute inset-0 bg-slate-950/95 z-50 p-4 overflow-y-auto flex flex-col justify-between">
+      <div class="space-y-4">
+        <!-- Encabezado del Cuaderno -->
+        <div class="border-b border-slate-700 pb-2">
+          <div class="flex justify-between items-center">
+            <h2 class="text-sm font-bold text-sky-400">Cuaderno de Observación y Cinética</h2>
+            <button onclick="toggleModal('modal-notebook')" class="text-slate-400 text-lg font-bold">✕</button>
+          </div>
+          <p class="text-[11px] text-slate-300 mt-1">
+            Registra el comportamiento cinético escalonado y responde a las preguntas conceptuales de andamiaje.
+          </p>
+        </div>
+
+        <!-- Sección 1: Registro por Tubo -->
+        <div>
+          <h3 class="text-xs font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+            1. Registro Experimental de Muestras
+          </h3>
+          <div class="space-y-2.5" id="notebook-rows"></div>
+        </div>
+
+        <!-- Sección 2: Conclusiones y Razonamiento Mecanicista -->
+        <div class="pt-2 border-t border-slate-700">
+          <h3 class="text-xs font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            2. Conclusiones y Mecanismo Químico
+          </h3>
+          <div class="space-y-3" id="conceptual-questions">
+
+            <!-- Pregunta 1: Reactividad Relativa -->
+            <div class="p-2.5 bg-slate-900/90 rounded-lg border border-slate-700 text-xs">
+              <p class="font-medium text-slate-200 mb-1.5">
+                Q1: ¿Por qué los alcoholes secundarios comenzaron a enturbiarse y precipitar MnO₂ antes que los primarios?
+              </p>
+              <select id="q1-select" onchange="validateQ1()" class="w-full bg-slate-950 border border-slate-600 text-slate-200 text-xs rounded p-1.5 mb-1.5">
+                <option value="">Selecciona una justificación...</option>
+                <option value="inductivo">Efecto inductivo donador (+I) de dos grupos alquilo que facilita la abstracción del H-alfa.</option>
+                <option value="ebullicion">Tienen un menor punto de ebullición y se evaporan más rápido en el baño maría.</option>
+                <option value="estequio">Reaccionan más rápido porque se agregaron más gotas de alcohol secundario.</option>
+              </select>
+              <div id="q1-feedback" class="text-[10px] hidden"></div>
+            </div>
+
+            <!-- Pregunta 2: Resistencia del Terciario -->
+            <div class="p-2.5 bg-slate-900/90 rounded-lg border border-slate-700 text-xs">
+              <p class="font-medium text-slate-200 mb-1.5">
+                Q2: ¿Por qué el 2-metil-2-propanol conservó el color púrpura (k = 0) incluso tras 60 s a 70°C?
+              </p>
+              <select id="q2-select" onchange="validateQ2()" class="w-full bg-slate-950 border border-slate-600 text-slate-200 text-xs rounded p-1.5 mb-1.5">
+                <option value="">Selecciona una justificación...</option>
+                <option value="solvente">El permanganato solo reacciona con alcoholes solubles en agua pura.</option>
+                <option value="h_alfa">Carece de hidrógeno unido al carbono carbinólico (sin H-alfa) para transferir electrones al Mn(VII).</option>
+                <option value="temperatura">El baño maría debió calentarse a 150°C para romper enlaces carbono-carbono.</option>
+              </select>
+              <div id="q2-feedback" class="text-[10px] hidden"></div>
+            </div>
+
+            <!-- Pregunta 3: Pseudo-Primer Orden -->
+            <div class="p-2.5 bg-slate-900/90 rounded-lg border border-slate-700 text-xs">
+              <p class="font-medium text-slate-200 mb-1.5">
+                Q3: ¿Por qué la reacción sigue un decaimiento cinético de pseudo-primer orden?
+              </p>
+              <select id="q3-select" onchange="validateQ3()" class="w-full bg-slate-950 border border-slate-600 text-slate-200 text-xs rounded p-1.5 mb-1.5">
+                <option value="">Selecciona una justificación...</option>
+                <option value="exceso">Porque el alcohol está en gran exceso estequiométrico (10 gotas vs. 1 gota) y su [Alcohol] se mantiene constante.</option>
+                <option value="catalizador">Porque el baño maría actúa como un catalizador homogéneo de orden cero.</option>
+                <option value="mno2">Porque el MnO2 sólido acelera exponencialmente la reacción por catálisis heterogénea.</option>
+              </select>
+              <div id="q3-feedback" class="text-[10px] hidden"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón Inferior -->
+      <button onclick="toggleModal('modal-notebook')" class="w-full mt-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-semibold shadow transition">
+        Cerrar Cuaderno
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // Paletas RGB para interpolación suave de color
+    const COLOR_PURPLE = { r: 112, g: 26, b: 117 };
+    const COLOR_BROWN = { r: 120, g: 53, b: 15 };
+    const COLOR_EXHAUSTED = { r: 180, g: 83, b: 9 };
+
+    // Configuración cinética de tubos
+    const initialTubes = [
+      { id: 1, label: "Tubo 1", name: "Metanol", type: "1°", k: 0.050, drops: 0, hasKMnO4: false, color: "#cbd5e1", fractionRemaining: 1.0, precipitateHeight: 0 },
+      { id: 2, label: "Tubo 2", name: "Etanol", type: "1°", k: 0.045, drops: 0, hasKMnO4: false, color: "#cbd5e1", fractionRemaining: 1.0, precipitateHeight: 0 },
+      { id: 3, label: "Tubo 3", name: "Isopropanol", type: "2°", k: 0.095, drops: 0, hasKMnO4: false, color: "#cbd5e1", fractionRemaining: 1.0, precipitateHeight: 0 },
+      { id: 4, label: "Tubo 4", name: "2-Butanol", type: "2°", k: 0.090, drops: 0, hasKMnO4: false, color: "#cbd5e1", fractionRemaining: 1.0, precipitateHeight: 0 },
+      { id: 5, label: "Tubo 5", name: "2-Metil-2-propanol", type: "3°", k: 0.000, drops: 0, hasKMnO4: false, color: "#cbd5e1", fractionRemaining: 1.0, precipitateHeight: 0 },
+      { id: 6, label: "Tubo 6", name: "Agua destilada", type: "Control", k: 0.000, drops: 0, hasKMnO4: false, color: "#cbd5e1", fractionRemaining: 1.0, precipitateHeight: 0 }
+    ];
+
+    let tubes = JSON.parse(JSON.stringify(initialTubes));
+    let isHeating = false;
+    let heatInterval = null;
+    let totalHeatTime = 0.0;
+
+    function renderTubesDOM() {
+      const container = document.getElementById("tubes-container");
+      container.innerHTML = "";
+
+      tubes.forEach(tube => {
+        const heightPercent = tube.drops > 0 ? (tube.hasKMnO4 ? 45 : 35) : 0;
+        
+        const tubeElem = document.createElement("div");
+        tubeElem.className = "flex flex-col items-center cursor-pointer group";
+        tubeElem.onclick = () => showTubeDetails(tube);
+
+        tubeElem.innerHTML = `
+          <div class="w-8 h-36 glass-tube relative flex flex-col justify-end p-0.5 overflow-hidden">
+            <div id="precipitate-${tube.id}" class="precipitate absolute bottom-0 left-0 right-0 bg-[#3E2723] rounded-b-xl z-20 shadow pointer-events-none" style="height: ${tube.precipitateHeight}px;"></div>
+            <div id="liquid-${tube.id}" class="liquid w-full" style="height: ${heightPercent}%; background-color: ${tube.color};"></div>
+          </div>
+          
+          <div class="mt-1 text-center">
+            <span class="text-[9px] block text-slate-300 font-medium truncate w-12">${tube.drops > 0 ? tube.name : tube.label}</span>
+            <span class="text-[8px] block text-slate-400">${tube.drops > 0 ? tube.type : "Vacío"}</span>
+          </div>
+        `;
+        container.appendChild(tubeElem);
+      });
+    }
+
+    function updateTubesVisuals() {
+      tubes.forEach(tube => {
+        const liquidElem = document.getElementById(`liquid-${tube.id}`);
+        const pptElem = document.getElementById(`precipitate-${tube.id}`);
+        if (liquidElem) liquidElem.style.backgroundColor = tube.color;
+        if (pptElem) pptElem.style.height = `${tube.precipitateHeight}px`;
+      });
+    }
+
+    function dispenseAllSamples() {
+      tubes.forEach(tube => {
+        tube.drops = 10;
+        tube.color = "rgba(224, 242, 254, 0.7)";
+        tube.precipitateHeight = 0;
+      });
+      renderTubesDOM();
+      showToast("Se agregaron 10 gotas a cada tubo (exceso estequiométrico).");
+    }
+
+    function addKMnO4ToAll() {
+      let emptyTubes = tubes.filter(t => t.drops === 0);
+      if (emptyTubes.length > 0) {
+        showToast("Advertencia: Se añadió oxidante en tubos vacíos.", true);
+      }
+
+      tubes.forEach(tube => {
+        tube.hasKMnO4 = true;
+        tube.fractionRemaining = 1.0;
+        tube.color = "rgb(112, 26, 117)";
+      });
+      renderTubesDOM();
+      showToast("1 gota de KMnO₄ añadida. Color púrpura homogéneo inicial.");
+    }
+
+    function toggleWaterBath() {
+      if (isHeating) {
+        stopHeating();
+      } else {
+        startHeating();
+      }
+    }
+
+    function startHeating() {
+      isHeating = true;
+      document.getElementById("bath-status").innerText = "Activo (70°C)";
+      document.getElementById("btn-heat").classList.replace("bg-amber-600", "bg-rose-600");
+
+      const tickRateMs = 50;
+      heatInterval = setInterval(() => {
+        totalHeatTime += tickRateMs / 1000;
+        computeKinetics();
+        document.getElementById("timer-display").innerText = totalHeatTime.toFixed(1) + "s";
+      }, tickRateMs);
+    }
+
+    function stopHeating() {
+      isHeating = false;
+      clearInterval(heatInterval);
+      document.getElementById("bath-status").innerText = "Apagado";
+      document.getElementById("btn-heat").classList.replace("bg-rose-600", "bg-amber-600");
+    }
+
+    function simulateFastForward(seconds) {
+      totalHeatTime += seconds;
+      document.getElementById("timer-display").innerText = totalHeatTime.toFixed(1) + "s";
+      computeKinetics();
+      showToast(`Avance térmico de +${seconds} segundos.`);
+    }
+
+    function computeKinetics() {
+      tubes.forEach(tube => {
+        if (tube.drops > 0 && !tube.hasKMnO4 && totalHeatTime > 4 && totalHeatTime < 4.2) {
+          showToast(`Error conceptual: Calentando ${tube.name} sin agente oxidante.`, true);
+        }
+
+        if (tube.hasKMnO4) {
+          if (tube.k > 0) {
+            const remaining = Math.exp(-tube.k * totalHeatTime);
+            tube.fractionRemaining = remaining;
+            const extent = 1.0 - remaining;
+
+            let r, g, b;
+            if (extent < 0.6) {
+              const factor = extent / 0.6;
+              r = Math.round(COLOR_PURPLE.r + factor * (COLOR_BROWN.r - COLOR_PURPLE.r));
+              g = Math.round(COLOR_PURPLE.g + factor * (COLOR_BROWN.g - COLOR_PURPLE.g));
+              b = Math.round(COLOR_PURPLE.b + factor * (COLOR_BROWN.b - COLOR_PURPLE.b));
+            } else {
+              const factor = (extent - 0.6) / 0.4;
+              r = Math.round(COLOR_BROWN.r + factor * (COLOR_EXHAUSTED.r - COLOR_BROWN.r));
+              g = Math.round(COLOR_BROWN.g + factor * (COLOR_EXHAUSTED.g - COLOR_BROWN.g));
+              b = Math.round(COLOR_BROWN.b + factor * (COLOR_EXHAUSTED.b - COLOR_BROWN.b));
+            }
+            tube.color = `rgb(${r}, ${g}, ${b})`;
+            tube.precipitateHeight = Math.min(16, extent * 16);
+          } else {
+            tube.fractionRemaining = 1.0;
+            tube.color = "rgb(112, 26, 117)";
+            tube.precipitateHeight = 0;
+          }
+        }
+      });
+      updateTubesVisuals();
+    }
+
+    function showTubeDetails(tube) {
+      if (tube.drops === 0) {
+        showToast(`${tube.label}: Vacío.`);
+        return;
+      }
+      if (!tube.hasKMnO4) {
+        showToast(`${tube.name} (${tube.type}): Sin oxidante.`);
+        return;
+      }
+      
+      const consumedPercent = ((1 - tube.fractionRemaining) * 100).toFixed(0);
+      let desc = `${tube.name} (${tube.type}) | MnO₄⁻ remanente: ${(tube.fractionRemaining * 100).toFixed(1)}%`;
+      if (tube.k > 0) {
+        desc += ` | MnO₂ formado: ${consumedPercent}%`;
+      } else {
+        desc += ` | k_obs = 0 (Sin reacción)`;
+      }
+      showToast(desc);
+    }
+
+    function resetLab() {
+      stopHeating();
+      totalHeatTime = 0.0;
+      document.getElementById("timer-display").innerText = "0.0s";
+      tubes = JSON.parse(JSON.stringify(initialTubes));
+      renderTubesDOM();
+      showToast("Gradilla y tubos restaurados para un nuevo ensayo.");
+    }
+
+    function showToast(msg, isWarning = false) {
+      const banner = document.getElementById("toast-banner");
+      const msgElem = document.getElementById("toast-message");
+      msgElem.innerText = msg;
+      banner.className = `mx-3 mt-2 p-2 text-xs rounded-lg transition-all duration-300 flex items-center justify-between ${isWarning ? 'bg-rose-900 border border-rose-600 text-rose-200' : 'bg-slate-700 border border-slate-600 text-sky-200'}`;
+      banner.classList.remove("hidden");
+    }
+
+    function hideToast() {
+      document.getElementById("toast-banner").classList.add("hidden");
+    }
+
+    function toggleModal(id) {
+      const modal = document.getElementById(id);
+      modal.classList.toggle("hidden");
+      if (id === 'modal-notebook') buildNotebook();
+    }
+
+    // Constructor del cuaderno de observación adaptado
+    function buildNotebook() {
+      const container = document.getElementById("notebook-rows");
+      container.innerHTML = "";
+
+      tubes.forEach(t => {
+        const row = document.createElement("div");
+        row.className = "p-2.5 bg-slate-900/90 rounded-lg border border-slate-700 text-xs";
+        
+        row.innerHTML = `
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="font-bold text-slate-200">${t.name} <span class="text-sky-400 font-normal">(${t.type})</span></span>
+            <span id="badge-tube-${t.id}" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Sin evaluar</span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-1.5 mb-1.5">
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-0.5">Cinética / Tiempo de Vire:</label>
+              <select id="time-res-${t.id}" onchange="validateSampleObservation(${t.id})" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded p-1">
+                <option value="">Selecciona velocidad...</option>
+                <option value="rapido">Rápida: vire temprano (8-20s)</option>
+                <option value="moderado">Moderada: vire tardío (25-45s)</option>
+                <option value="nulo">Nula: sin vire tras 60s (k = 0)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-0.5">Estado Final Observado:</label>
+              <select id="final-res-${t.id}" onchange="validateSampleObservation(${t.id})" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded p-1">
+                <option value="">Selecciona apariencia...</option>
+                <option value="mno2">Precipitado café de MnO2 sedimentado</option>
+                <option value="purpura">Solución púrpura intacta</option>
+              </select>
+            </div>
+          </div>
+
+          <p id="feedback-sample-${t.id}" class="text-[10px] mt-1 text-slate-400 hidden p-1.5 rounded bg-slate-950/60 border border-slate-800"></p>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    // Validación individual de cada tubo en la matriz
+    function validateSampleObservation(tubeId) {
+      const timeVal = document.getElementById(`time-res-${tubeId}`).value;
+      const finalVal = document.getElementById(`final-res-${tubeId}`).value;
+      const badge = document.getElementById(`badge-tube-${tubeId}`);
+      const feedback = document.getElementById(`feedback-sample-${tubeId}`);
+      const tube = tubes.find(t => t.id === tubeId);
+
+      if (!timeVal || !finalVal) return;
+
+      feedback.classList.remove("hidden");
+
+      if (tube.type === "2°") {
+        if (timeVal === "rapido" && finalVal === "mno2") {
+          badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-900/80 text-emerald-300 border border-emerald-600";
+          badge.innerText = "Correcto";
+          feedback.className = "text-[10px] mt-1 text-emerald-400 p-1.5 rounded bg-emerald-950/40 border border-emerald-800";
+          feedback.innerText = "Exacto: Los alcoholes secundarios viran rápidamente (8-20 s) debido al efecto donador (+I) de sus dos sustituyentes alquilo, que estabiliza el estado de transición y genera MnO2 café.";
+        } else {
+          badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-rose-900/80 text-rose-300 border border-rose-600";
+          badge.innerText = "Inexacto";
+          feedback.className = "text-[10px] mt-1 text-rose-400 p-1.5 rounded bg-rose-950/40 border border-rose-800";
+          feedback.innerText = "Revisa: Los secundarios son los primeros en reaccionar en el baño maría (vire temprano) y forman precipitado café de MnO2 sedimentado.";
+        }
+      } else if (tube.type === "1°") {
+        if (timeVal === "moderado" && finalVal === "mno2") {
+          badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-900/80 text-emerald-300 border border-emerald-600";
+          badge.innerText = "Correcto";
+          feedback.className = "text-[10px] mt-1 text-emerald-400 p-1.5 rounded bg-emerald-950/40 border border-emerald-800";
+          feedback.innerText = "Exacto: Los alcoholes primarios poseen H-alfa y se oxidan a MnO2, pero con una constante aparente menor (vire moderado, 25-45 s) comparados con los secundarios.";
+        } else {
+          badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-rose-900/80 text-rose-300 border border-rose-600";
+          badge.innerText = "Inexacto";
+          feedback.className = "text-[10px] mt-1 text-rose-400 p-1.5 rounded bg-rose-950/40 border border-rose-800";
+          feedback.innerText = "Revisa: Los primarios sí se oxidan formando MnO2, pero su decaimiento es más lento que el de los alcoholes secundarios.";
+        }
+      } else {
+        // Terciario o Control
+        if (timeVal === "nulo" && finalVal === "purpura") {
+          badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-900/80 text-emerald-300 border border-emerald-600";
+          badge.innerText = "Correcto";
+          feedback.className = "text-[10px] mt-1 text-emerald-400 p-1.5 rounded bg-emerald-950/40 border border-emerald-800";
+          feedback.innerText = tube.type === "3°"
+            ? "Exacto: El 2-metil-2-propanol carece de H-alfa; la barrera de activación es insalvable y la solución permanece púrpura (k = 0)."
+            : "Exacto: El agua actúa como testigo negativo; no hay agente reductor orgánico.";
+        } else {
+          badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-rose-900/80 text-rose-300 border border-rose-600";
+          badge.innerText = "Inexacto";
+          feedback.className = "text-[10px] mt-1 text-rose-400 p-1.5 rounded bg-rose-950/40 border border-rose-800";
+          feedback.innerText = "Revisa: No hay consumo de permanganato en este tubo. La solución no vira ni forma precipitado.";
+        }
+      }
+    }
+
+    // Validaciones de las preguntas conceptuales
+    function validateQ1() {
+      const val = document.getElementById("q1-select").value;
+      const fb = document.getElementById("q1-feedback");
+      fb.classList.remove("hidden");
+      if (val === "inductivo") {
+        fb.className = "text-[10px] text-emerald-400 mt-1";
+        fb.innerText = "¡Correcto! Los dos grupos alquilo aportan densidad electrónica (+I) al carbono funcional, debilitando el enlace C-H alfa y estabilizando el estado de transición de la abstracción concertada.";
+      } else {
+        fb.className = "text-[10px] text-rose-400 mt-1";
+        fb.innerText = "Incorrecto. La velocidad superior de los secundarios radica en factores electrónicos (+I) que facilitan la salida del hidrógeno en la etapa lenta determinante.";
+      }
+    }
+
+    function validateQ2() {
+      const val = document.getElementById("q2-select").value;
+      const fb = document.getElementById("q2-feedback");
+      fb.classList.remove("hidden");
+      if (val === "h_alfa") {
+        fb.className = "text-[10px] text-emerald-400 mt-1";
+        fb.innerText = "¡Correcto! El éster permangánico requiere transferir el par de electrones mediante la abstracción de un H-alfa. Al estar unido a 3 grupos metilo, no hay vía mecanicista disponible.";
+      } else {
+        fb.className = "text-[10px] text-rose-400 mt-1";
+        fb.innerText = "Incorrecto. La razón es mecanicista y estructural: la ausencia total de hidrógenos en el carbono carbinólico impide la oxidación.";
+      }
+    }
+
+    function validateQ3() {
+      const val = document.getElementById("q3-select").value;
+      const fb = document.getElementById("q3-feedback");
+      fb.classList.remove("hidden");
+      if (val === "exceso") {
+        fb.className = "text-[10px] text-emerald-400 mt-1";
+        fb.innerText = "¡Correcto! Al estar el alcohol en un exceso estequiométrico sustancial (10 gotas vs. 1 gota), su concentración permanece invariante ([Alcohol] ≈ [Alcohol]₀), reduciendo la ley bimolecular v = k[Alc][KMnO4] a v = k_obs[KMnO4].";
+      } else {
+        fb.className = "text-[10px] text-rose-400 mt-1";
+        fb.innerText = "Incorrecto. Una cinética de pseudo-primer orden ocurre experimentalmente por el exceso masivo de uno de los reactivos frente al reactivo limitante.";
+      }
+    }
+
+    renderTubesDOM();
+  </script>
+</body>
+</html>
