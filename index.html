@@ -4,7 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LabVirtual: Oxidación de Alcoholes con KMnO4</title>
+
+  <!-- Configuración para que MathJax procese $...$ -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
+
+  <!-- Motor de renderizado -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     .glass-tube {
       background: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 100%);
@@ -21,6 +35,7 @@
     }
   </style>
 </head>
+
 <body class="bg-slate-900 text-slate-100 min-h-screen flex justify-center p-0 sm:p-4 select-none font-sans">
 
   <!-- Marco Móvil (390 x 844 aprox) -->
@@ -109,9 +124,16 @@
           <h2 class="text-sm font-bold text-sky-400">Cinética y Mecanismo: Influencia del H-α</h2>
           <button onclick="toggleModal('modal-structures')" class="text-slate-400 text-lg font-bold">✕</button>
         </div>
-        <p class="text-xs text-slate-300 mb-3">
-          El alcohol en gran exceso estipula una <strong>cinética de pseudo-primer orden</strong>: $[MnO_4^-](t) = [MnO_4^-]_0 \cdot e^{-k_{obs}t}$.
-        </p>
+<p class="text-xs text-slate-300 mb-3">
+  El alcohol en gran exceso estipula una 
+  <a href="https://drive.google.com/file/d/1_6oPvbfcvAj5_mvCDhNy5gRm-0pyBOY_/view?usp=sharing"
+     target="_blank"
+     class="text-blue-300 underline">
+     <strong>cinética de pseudo-primer orden</strong>
+  </a>
+  : $[MnO_4^-](t) = [MnO_4^-]_0 \cdot e^{-k_{obs}t}$.
+</p>
+
         
         <div class="space-y-2 text-xs">
           <div class="p-2 bg-slate-800 rounded border border-amber-500/50">
