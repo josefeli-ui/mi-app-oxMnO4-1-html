@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cinética de pseudo-primer orden en la oxidación de alcoholes con permanganato</title>
+</head>
+<body>
+  <h1>Cinética de pseudo-primer orden en la oxidación de alcoholes con permanganato</h1>
+
+  <h2>Contexto de la reacción</h2>
+  <p>
+    La oxidación de alcoholes con ion permanganato (MnO₄⁻) es una reacción clásica en química,
+    donde el permanganato actúa como agente oxidante y el alcohol como sustrato orgánico.
+    En condiciones experimentales habituales, el permanganato se encuentra en baja concentración
+    mientras que el alcohol está en gran exceso.
+  </p>
+  <p>
+    Esta elección no es casual: al usar el alcohol en exceso, se simplifica el análisis cinético
+    y se facilita la comparación entre distintos tipos de alcoholes (primarios, secundarios y terciarios).
+  </p>
+
+  <h2>Definición de cinética de pseudo-primer orden</h2>
+  <p>
+    Una reacción es de pseudo-primer orden cuando, aunque en realidad dependa de más de un reactivo,
+    se lleva a cabo en condiciones donde uno de ellos está en gran exceso y su concentración
+    permanece prácticamente constante durante el experimento.
+  </p>
+  <p>
+    En esas condiciones, la velocidad de reacción depende de manera efectiva solo de la concentración
+    de uno de los reactivos, y la ley de velocidad se puede escribir como si fuera de primer orden.
+  </p>
+
+  <h2>Aplicación a la oxidación de alcoholes con permanganato</h2>
+  <p>
+    En la oxidación de alcoholes con permanganato, la velocidad real depende de la concentración
+    del alcohol y del permanganato. Sin embargo, al trabajar con el alcohol en gran exceso,
+    su concentración no cambia de forma apreciable durante la reacción y puede considerarse constante.
+  </p>
+  <p>
+    La ley de velocidad se puede escribir entonces como:
+  </p>
+  <code>
+    v = k_obs [MnO4^-]
+  </code>
+  <p>
+    donde k_obs es la constante de velocidad observada, que incluye el efecto del alcohol en exceso.
+    La ecuación integrada para la desaparición del permanganato toma la forma:
+  </p>
+  <code>
+    [MnO4^-](t) = [MnO4^-]_0 · e^{-k_obs t}
+  </code>
+  <p>
+    Esta expresión describe un decaimiento exponencial típico de una reacción de primer orden.
+    En el contexto del simulador, esto se refleja en la disminución progresiva del color violeta
+    del permanganato y en la curva de concentración vs. tiempo que desciende suavemente.
+  </p>
+  <p>
+    Al medir k_obs para distintos alcoholes, es posible comparar su reactividad y entender
+    cómo la estructura del alcohol (primario, secundario, terciario) influye en la velocidad
+    de oxidación.
+  </p>
+
+  <h2>Conclusiones</h2>
+  <p>
+    La cinética de pseudo-primer orden es una herramienta experimental que permite simplificar
+    el estudio de reacciones que, en principio, dependen de más de un reactivo.
+    En la oxidación de alcoholes con permanganato, el uso del alcohol en gran exceso hace que
+    la reacción se comporte como de primer orden respecto al permanganato.
+  </p>
+  <p>
+    Esta aproximación facilita el análisis de datos, la obtención de constantes de velocidad
+    y la comparación entre diferentes sustratos. Además, conecta directamente la observación
+    experimental (cambio de color, curvas de concentración) con un modelo matemático sencillo
+    y robusto.
+  </p>
+</body>
+</html>
